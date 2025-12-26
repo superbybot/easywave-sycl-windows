@@ -39,6 +39,11 @@
 #include "easywave.h"
 #include <cmath>
 
+// Define M_PI for Windows
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 int Imin;
 int Imax;
 int Jmin;
