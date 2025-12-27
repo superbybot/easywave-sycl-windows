@@ -37,6 +37,7 @@
 #include <string.h>
 #include <time.h>
 #include <stdexcept>
+#include <chrono>
 #include "utilits.h"
 #include "easywave.h"
 
@@ -46,18 +47,12 @@
 
 CNode *gNode;
 
-double diff(timespec start, timespec end) {
+// Windows-compatible timing using chrono
+using TimePoint = std::chrono::steady_clock::time_point;
 
-	timespec temp;
-	if ((end.tv_nsec-start.tv_nsec)<0) {
-		temp.tv_sec = end.tv_sec-start.tv_sec-1;
-		temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
-	} else {
-		temp.tv_sec = end.tv_sec-start.tv_sec;
-		temp.tv_nsec = end.tv_nsec-start.tv_nsec;
-	}
-
-	return (double)((double)temp.tv_nsec / 1000000000.0 + (double)temp.tv_sec);
+double diff(TimePoint start, TimePoint end) {
+	auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+	return duration.count() / 1000000000.0;
 }
 
 int commandLineHelp( void );
@@ -118,8 +113,8 @@ int main( int argc, char **argv )
   // Main loop
   Log.print("Starting main loop...");
 
-  timespec start, inter, end;
-  clock_gettime(CLOCK_MONOTONIC, &start);
+  TimePoint start, inter, end;
+  start = std::chrono::steady_clock::now();
 
   for( Par.time=0,loop=1,lastProgress=Par.outProgress,lastPropagation=Par.outPropagation,lastDump=0;
     Par.time<=Par.timeMax; loop++,Par.time+=Par.dt,lastProgress+=Par.dt,lastPropagation+=Par.dt ) {
@@ -132,7 +127,7 @@ int main( int argc, char **argv )
 
     Node.run();
 
-    clock_gettime(CLOCK_MONOTONIC, &inter);
+    inter = std::chrono::steady_clock::now();
     elapsed = diff(start, inter) * 1000;
 
     if( Par.outProgress ) {
@@ -163,7 +158,7 @@ int main( int argc, char **argv )
     }
 
   } // main loop
-  clock_gettime(CLOCK_MONOTONIC, &end);
+  end = std::chrono::steady_clock::now();
   Log.print("Finishing main loop");
 
   /* TODO: check if theses calls can be combined */

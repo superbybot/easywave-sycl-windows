@@ -3,3 +3,19 @@ make.inc
 easywave-sycl
 easywave-cuda
 easywave-hip
+build/
+
+# Test data (download separately)
+easyWave-master-data/
+
+# Output directories
+outputs/
+outputs-*/
+
+# Diagnostic directories
+diagnostic-*/
+
+# Log files
+*.log
+eWave.*
+error.msg

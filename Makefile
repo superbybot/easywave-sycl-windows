@@ -1,5 +1,8 @@
 include make.inc
 
+# Build directory for intermediate files
+BUILD_DIR = build
+
 BASE_SOURCES=\
 	EasyWave.cpp \
 	ewGpuNode.sycl.cpp \
@@ -23,7 +26,11 @@ EXTRA_SOURCES=ewKernels.sycl.cpp
 endif
 
 SOURCES=$(EXTRA_SOURCES) $(BASE_SOURCES)
-OBJECTS=$(patsubst %.cpp,%.o,$(SOURCES))
+OBJECTS=$(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
+
+# Pattern rule for compiling .cpp to .o in build directory
+$(BUILD_DIR)/%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 easywave-sycl: $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $^ $(LDLIBS) -o $@
@@ -31,4 +38,5 @@ easywave-sycl: $(OBJECTS)
 .PHONY: clean
 
 clean:
-	rm -f *.o easywave-sycl
+	rm -rf $(BUILD_DIR) easywave-sycl
+
