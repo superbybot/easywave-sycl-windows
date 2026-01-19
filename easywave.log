@@ -1,0 +1,88 @@
+ =============  Starting new log at Fri Dec 26 22:41:22 2025
+Command line:  -gpu -verbose -grid easyWave-master-data\data\grids\e2Asean.grd -source easyWave-master-data\data\faults\fault.inp -time 5 -step 1
+Loading bathymetry from easyWave-master-data\data\grids\e2Asean.grd
+Read source from easyWave-master-data\data\faults\fault.inp
+
+Model parameters for this simulation:
+timestep: 1 sec
+max time: 5 min
+poi_dt_out: 30 sec
+poi_report: no
+poi_search_dist: 10 km
+poi_min_depth: 1 m
+poi_max_depth: 10000 m
+coriolis: no
+min_depth: 10 m
+ssh0_rel: 0.01
+ssh0_abs: 0 m
+ssh_arrival: 0.001 m
+ssh_clip: 0.0001 m
+ssh_zero: 1e-05 m
+ssh_transparency: 0 m
+
+threads_x: 8
+
+threads_y: 32
+
+Starting main loop...
+ =============  Starting new log at Fri Dec 26 22:42:53 2025
+Command line:  -gpu -verbose -grid easyWave-master-data\data\grids\e2Asean.grd -source easyWave-master-data\data\faults\fault.inp -time 5
+Loading bathymetry from easyWave-master-data\data\grids\e2Asean.grd
+Stable CFL time step: 8.34961 sec
+Read source from easyWave-master-data\data\faults\fault.inp
+
+Model parameters for this simulation:
+timestep: 5 sec
+max time: 5 min
+poi_dt_out: 30 sec
+poi_report: no
+poi_search_dist: 10 km
+poi_min_depth: 1 m
+poi_max_depth: 10000 m
+coriolis: no
+min_depth: 10 m
+ssh0_rel: 0.01
+ssh0_abs: 0 m
+ssh_arrival: 0.001 m
+ssh_clip: 0.0001 m
+ssh_zero: 1e-05 m
+ssh_transparency: 0 m
+
+threads_x: 8
+
+threads_y: 32
+
+Starting main loop...
+ =============  Starting new log at Sat Dec 27 00:33:52 2025
+Command line:  -gpu -verbose -grid data\grids\e2Asean.grd -source data\faults\fault.inp -time 1
+Loading bathymetry from data\grids\e2Asean.grd
+ =============  Starting new log at Sat Dec 27 00:39:19 2025
+Command line:  -gpu -verbose -grid data\faults\fault.inp -source ECHO is off. -time Y
+ =============  Starting new log at Sat Dec 27 00:42:43 2025
+Command line:  -gpu -verbose -grid easyWave-master-data\data\grids\e2Asean.grd -source easyWave-master-data\data\faults\fault.inp -time 1
+Loading bathymetry from easyWave-master-data\data\grids\e2Asean.grd
+Stable CFL time step: 8.34961 sec
+Read source from easyWave-master-data\data\faults\fault.inp
+
+Model parameters for this simulation:
+timestep: 5 sec
+max time: 1 min
+poi_dt_out: 30 sec
+poi_report: no
+poi_search_dist: 10 km
+poi_min_depth: 1 m
+poi_max_depth: 10000 m
+coriolis: no
+min_depth: 10 m
+ssh0_rel: 0.01
+ssh0_abs: 0 m
+ssh_arrival: 0.001 m
+ssh_clip: 0.0001 m
+ssh_zero: 1e-05 m
+ssh_transparency: 0 m
+
+threads_x: 8
+
+threads_y: 32
+
+Starting main loop...
