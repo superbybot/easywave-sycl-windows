@@ -40,7 +40,7 @@ set END_TIME=%time%
 echo Start: %START_TIME%
 echo End:   %END_TIME%
 
-powershell -Command "$start = [datetime]::ParseExact^('%START_TIME%', 'HH:mm:ss.ff', $null^); $end = [datetime]::ParseExact^('%END_TIME%', 'HH:mm:ss.ff', $null^); $elapsed = $end - $start; if ^($elapsed.TotalSeconds -lt 0^) { $elapsed = $elapsed.Add^([TimeSpan]::FromDays^(1^)^) }; Write-Host ^('Execution time: {0:D2}h {1:D2}m {2:D2}s' -f [int]$elapsed.TotalHours, $elapsed.Minutes, $elapsed.Seconds^)"
+powershell -Command "$start = [datetime]::Parse('%START_TIME%'.Trim()); $end = [datetime]::Parse('%END_TIME%'.Trim()); $elapsed = $end - $start; if ($elapsed.TotalSeconds -lt 0) { $elapsed = $elapsed.Add([TimeSpan]::FromDays(1)) }; Write-Host ('Execution time: {0:D2}h {1:D2}m {2:D2}s' -f [int]$elapsed.TotalHours, $elapsed.Minutes, $elapsed.Seconds)"
 
 if exist "outputs-gpu\eWave.2D.sshmax" (
     echo SUCCESS! Main output file created: eWave.2D.sshmax
