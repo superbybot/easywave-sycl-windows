@@ -11,7 +11,8 @@ easywave-sycl-windows/
 ├── build/                          ← Executables + DLLs (standalone)
 │   ├── easywave-sycl.exe          (SYCL version)
 │   ├── easywave-cuda.exe          (CUDA version)
-│   ├── sycl8.dll                  (SYCL runtime)
+│   ├── cudart64_13.dll            (CUDA runtime - for CUDA exe)
+│   ├── sycl8.dll                  (SYCL runtime - for SYCL exe)
 │   ├── svml_dispmd.dll            (Math library)
 │   ├── libmmd.dll                 (Math library)
 │   └── libiomp5md.dll             (OpenMP runtime)
@@ -68,10 +69,19 @@ Both scripts:
 ## What Was Done
 
 1. **Copied Required DLLs** to `build/` folder:
+   
+   **For SYCL executable:**
    - `sycl8.dll` - SYCL runtime library
+   - `ur_adapter_level_zero.dll` - Level Zero adapter
+   - `ur_adapter_opencl.dll` - OpenCL adapter
+   - `ur_loader.dll` - Unified Runtime loader
+   - `ur_win_proxy_loader.dll` - Windows proxy loader
    - `svml_dispmd.dll` - Short Vector Math Library
    - `libmmd.dll` - Math library
    - `libiomp5md.dll` - OpenMP runtime
+   
+   **For CUDA executable:**
+   - `cudart64_13.dll` - CUDA Runtime Library
 
 2. **Moved Executables** to `build/`:
    - `easywave-sycl.exe`
@@ -105,13 +115,26 @@ The standalone batch files work by:
 
 ### DLL Dependencies
 
+#### SYCL Executable (`easywave-sycl.exe`)
 The SYCL executable requires these Intel oneAPI DLLs:
 - **sycl8.dll** (3.7 MB) - Core SYCL runtime
+- **ur_adapter_level_zero.dll** (1.1 MB) - Level Zero adapter
+- **ur_adapter_opencl.dll** (0.3 MB) - OpenCL adapter
+- **ur_loader.dll** (1.3 MB) - Unified Runtime loader
+- **ur_win_proxy_loader.dll** (0.1 MB) - Windows proxy loader
 - **svml_dispmd.dll** (18 MB) - Vectorized math functions
 - **libmmd.dll** (4.0 MB) - Math dispatch library
 - **libiomp5md.dll** (1.5 MB) - OpenMP parallel runtime
 
-Total DLL size: ~28 MB
+Total DLL size: ~30 MB
+
+#### CUDA Executable (`easywave-cuda.exe`)
+The CUDA executable requires:
+- **cudart64_13.dll** (0.5 MB) - CUDA Runtime Library (version 13.1)
+
+**Note**: The target device must have NVIDIA GPU drivers installed, but does NOT need the full CUDA Toolkit. The `cudart64_13.dll` is the only redistributable runtime DLL needed.
+
+Total DLL size: ~0.5 MB
 
 ---
 
