@@ -54,12 +54,20 @@ namespace easywave {
 constexpr easywave::gpu_api_type_t api = easywave::GpuApiType::SYCL;
 namespace easywave { using quad_int_t = cl::sycl::int4; }
 
-#elif defined(__CUDACC__)
+#elif defined(__CUDACC__) || defined(EW_FORCE_CUDA)
 
 #include <cuda.h>
+#include <cuda_runtime.h>
 
+#ifndef DEVICE_FUNCTION
+#if defined(__CUDACC__)
 #define DEVICE_FUNCTION __device__
 #define HOST_FUNCTION __host__
+#else
+#define DEVICE_FUNCTION
+#define HOST_FUNCTION
+#endif
+#endif
 
 #define EW_GPU_ENABLED 1
 

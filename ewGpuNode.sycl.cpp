@@ -105,8 +105,18 @@ CGpuNode::CGpuNode() {
 
 	pitch = 0;
 	copied = true;
-
-	default_queue = new cl::sycl::queue();
+	try {
+		default_queue = new cl::sycl::queue();
+	} catch (const cl::sycl::exception &e) {
+		std::cerr << "SYCL Exception during queue creation: " << e.what() << std::endl;
+		exit(2);
+	} catch (const std::exception &e) {
+		std::cerr << "Standard Exception during queue creation: " << e.what() << std::endl;
+		exit(3);
+	} catch (...) {
+		std::cerr << "Unknown exception during queue creation" << std::endl;
+		exit(4);
+	}
 	const auto &dev = default_queue->get_device();
 
 	std::cout << "Selected device: " << dev.get_info<cl::sycl::info::device::name>() << std::endl;
@@ -280,7 +290,7 @@ int CGpuNode::copyPOIs() {
 
 		int id = data.idx( i, j );
 
-		queue->memcpy(h + idxPOI[n], data.h + dp.lpad + id, sizeof(float)).wait();
+		queue->memcpy(h + idxPOI[n], data.h + id, sizeof(float)).wait();
 	}
 
 	return 0;

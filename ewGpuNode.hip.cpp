@@ -182,7 +182,7 @@ int CGpuNode::copyPOIs() {
 
 		int id = data.idx( i, j );
 
-		HIP_CALL( hipMemcpy( h + idxPOI[n], data.h + dp.lpad + id, sizeof(float), hipMemcpyDeviceToHost ) );
+		HIP_CALL( hipMemcpy( h + idxPOI[n], data.h + id, sizeof(float), hipMemcpyDeviceToHost ) );
 	}
 
 	return 0;

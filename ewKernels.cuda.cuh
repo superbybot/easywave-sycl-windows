@@ -33,12 +33,21 @@
 #ifndef EW_KERNELS_H
 #define EW_KERNELS_H
 
-#include "ewGpuNode.hpp"
+#include "ewGpuData.cuh"
 
+#ifdef __CUDACC__
 __global__ void waveUpdateKernel(KernelData data);
 __global__ void waveBoundaryKernel(KernelData data);
 __global__ void fluxUpdateKernel(KernelData data);
 __global__ void fluxBoundaryKernel(KernelData data);
 __global__ void gridExtendKernel(KernelData data);
+#endif
+
+// Host launcher functions
+void runWaveUpdateKernel(dim3 blocks, dim3 threads, KernelData data);
+void runWaveBoundaryKernel(int nBlocks, int nThreads, KernelData data);
+void runFluxUpdateKernel(dim3 blocks, dim3 threads, KernelData data);
+void runFluxBoundaryKernel(int nBlocks, int nThreads, KernelData data);
+void runGridExtendKernel(int nBlocks, int nThreads, KernelData data);
 
 #endif /* EW_KERNELS_H */

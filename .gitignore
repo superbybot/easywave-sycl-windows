@@ -1,21 +1,32 @@
-*.o
-make.inc
-easywave-sycl
-easywave-cuda
-easywave-hip
+outputs-cpu/eWave.2D.00000.ssh
+outputs-cpu/
+outputs-sycl/
+TEMP_FILES/
+intermediate/
+test-gpu-out/
+outputs-gpu/
+test-cpu-out/
+outputs-cuda/
+
+# Binaries and build artifacts
+*.obj
+*.exe
+*.lib
+*.exp
 build/
+build_/
 
-# Test data (download separately)
-easyWave-master-data/
+# Installer files
+GPU_DRIVER/
 
-# Output directories
-outputs/
-outputs-*/
-
-# Diagnostic directories
-diagnostic-*/
+# Wave outputs in workspace root
+*.ssh
+*.sshmax
+*.time
+*.idx
 
 # Log files
 *.log
-eWave.*
-error.msg
+
+# Large Datasets
+easyWave-master-data/

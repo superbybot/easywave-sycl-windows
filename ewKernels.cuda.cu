@@ -25,12 +25,40 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the Licence is distributed on an "AS IS" basis,
+/*
+ * EasyWave - A realtime tsunami simulation program with GPU support.
+ * Copyright (C) 2014  Andrey Babeyko, Johannes Spazier
+ * GFZ German Research Centre for Geosciences (http://www.gfz-potsdam.de)
+ *
+ * Parts of this program (especially the GPU extension) were developed
+ * within the context of the following publicly funded project:
+ * - TRIDEC, EU 7th Framework Programme, Grant Agreement 258723
+ *   (http://www.tridec-online.eu)
+ *
+ * Licensed under the EUPL, Version 1.1 or - as soon they will be approved by
+ * the European Commission - subsequent versions of the EUPL (the "Licence"),
+ * complemented with the following provision: For the scientific transparency
+ * and verification of results obtained and communicated to the public after
+ * using a modified version of the work, You (as the recipient of the source
+ * code and author of this modified version, used to produce the published
+ * results in scientific communications) commit to make this modified source
+ * code available in a repository that is easily and freely accessible for a
+ * duration of five years after the communication of the obtained results.
+ *
+ * You may not use this work except in compliance with the Licence.
+ *
+ * You may obtain a copy of the Licence at:
+ * https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the Licence is distributed on an "AS IS" basis,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and
  * limitations under the Licence.
  */
 
-#include "ewGpuNode.hpp"
+#include <stdio.h>
+#include "ewGpuData.cuh"
 #include "ewKernels.cuda.cuh"
 
 __global__ void waveUpdateKernel( KernelData data ) {
@@ -61,7 +89,6 @@ __global__ void waveUpdateKernel( KernelData data ) {
 
 	  data.h[ij] = hh;
   }
-
 }
 
 __global__ void fluxUpdateKernel( KernelData data ) {
@@ -99,35 +126,35 @@ __global__ void waveBoundaryKernel( KernelData data ) {
 
 	if( dp.jMin <= 2 && id <= dp.nI-1 ) {
 	  ij = dt.idx(id,1);
-	  dt.h[ij] = sqrtf( SQR(dt.fN[ij]) + 0.25f*SQR((dt.fM[ij] + dt.fM[dt.le(ij)])) )*dt.cB1[id-1];
+	  dt.h[ij] = sqrtf( SQR(dt.fN[ij]) + 0.25f*SQR((dt.fM[ij] + dt.fM[dt.le(ij)])) )*dt.cB1[id];
 	  if( dt.fN[ij] > 0 ) dt.h[ij] = -dt.h[ij];
 	}
 
 	if( dp.iMin <= 2 && id <= dp.nJ-1 ) {
 	  ij = dt.idx(1,id);
-	  dt.h[ij] = sqrtf( SQR(dt.fM[ij]) + 0.25f*SQR((dt.fN[ij] + dt.fN[dt.dn(ij)])) )*dt.cB2[id-1];
+	  dt.h[ij] = sqrtf( SQR(dt.fM[ij]) + 0.25f*SQR((dt.fN[ij] + dt.fN[dt.dn(ij)])) )*dt.cB2[id];
 	  if( dt.fM[ij] > 0 ) dt.h[ij] = -dt.h[ij];
 	}
 
 	if( dp.jMax >= dp.nJ - 1 && id <= dp.nI-1 ) {
 	  ij = dt.idx(id,dp.nJ);
-	  dt.h[ij] = sqrtf( SQR(dt.fN[dt.dn(ij)]) + 0.25f*SQR((dt.fM[ij] + dt.fM[dt.dn(ij)])) )*dt.cB3[id-1];
+	  dt.h[ij] = sqrtf( SQR(dt.fN[dt.dn(ij)]) + 0.25f*SQR((dt.fM[ij] + dt.fM[dt.dn(ij)])) )*dt.cB3[id];
 	  if( dt.fN[dt.dn(ij)] < 0 ) dt.h[ij] = -dt.h[ij];
 	}
 
 	if( dp.iMax >= dp.nI -1 && id <= dp.nJ-1 ) {
 	  ij = dt.idx(dp.nI,id);
-	  dt.h[ij] = sqrtf( SQR(dt.fM[dt.le(ij)]) + 0.25f*SQR((dt.fN[ij] + dt.fN[dt.dn(ij)])) )*dt.cB4[id-1];
+	  dt.h[ij] = sqrtf( SQR(dt.fM[dt.le(ij)]) + 0.25f*SQR((dt.fN[ij] + dt.fN[dt.dn(ij)])) )*dt.cB4[id];
 	  if( dt.fM[dt.le(ij)] < 0 ) dt.h[ij] = -dt.h[ij];
 	}
 
 	if( id == 2 && dp.jMin <= 2 ) {
 	  ij = dt.idx(1,1);
-	  dt.h[ij] = sqrtf( SQR(dt.fM[ij]) + SQR(dt.fN[ij]) )*dt.cB1[0];
+	  dt.h[ij] = sqrtf( SQR(dt.fM[ij]) + SQR(dt.fN[ij]) )*dt.cB1[1];
 	  if( dt.fN[ij] > 0 ) dt.h[ij] = -dt.h[ij];
 
 	  ij = dt.idx(dp.nI,1);
-	  dt.h[ij] = sqrtf( SQR(dt.fM[dt.le(ij)]) + SQR(dt.fN[ij]) )*dt.cB1[dp.nI-1];
+	  dt.h[ij] = sqrtf( SQR(dt.fM[dt.le(ij)]) + SQR(dt.fN[ij]) )*dt.cB1[dp.nI];
 	  if( dt.fN[ij] > 0 ) dt.h[ij] = -dt.h[ij];
 	}
 
@@ -137,7 +164,7 @@ __global__ void waveBoundaryKernel( KernelData data ) {
 	  if( dt.fN[dt.dn(ij)] < 0 ) dt.h[ij] = -dt.h[ij];
 
 	  ij = dt.idx(dp.nI,dp.nJ);
-	  dt.h[ij] = sqrtf( SQR(dt.fM[dt.le(ij)]) + SQR(dt.fN[dt.dn(ij)]) )*dt.cB3[dp.nI-1];
+	  dt.h[ij] = sqrtf( SQR(dt.fM[dt.le(ij)]) + SQR(dt.fN[dt.dn(ij)]) )*dt.cB3[dp.nI];
 	  if( dt.fN[dt.dn(ij)] < 0 ) dt.h[ij] = -dt.h[ij];
 	}
 }
@@ -175,7 +202,7 @@ __global__ void fluxBoundaryKernel( KernelData data ) {
 	  dt.fN[ij] = dt.fN[ij] - dt.cR4[ij]*(dt.h[dt.up(ij)] - dt.h[ij]);
 	}
 
-	if( dp.iMax >= dp.nJ - 1 && id <= dp.nJ-1 ) {
+	if( dp.iMax >= dp.nI - 1 && id <= dp.nJ-1 ) {
 	  ij = dt.idx(dp.nI,id);
 	  dt.fN[ij] = dt.fN[ij] - dt.cR4[ij]*(dt.h[dt.up(ij)] - dt.h[ij]);
 	}
@@ -250,3 +277,22 @@ __global__ void gridExtendKernel( KernelData data ) {
 #endif
 }
 
+void runWaveUpdateKernel(dim3 blocks, dim3 threads, KernelData data) {
+	waveUpdateKernel<<<blocks,threads>>>( data );
+}
+
+void runWaveBoundaryKernel(int nBlocks, int nThreads, KernelData data) {
+	waveBoundaryKernel<<<nBlocks,nThreads>>>( data );
+}
+
+void runFluxUpdateKernel(dim3 blocks, dim3 threads, KernelData data) {
+	fluxUpdateKernel<<<blocks,threads>>>( data );
+}
+
+void runFluxBoundaryKernel(int nBlocks, int nThreads, KernelData data) {
+	fluxBoundaryKernel<<<nBlocks,nThreads>>>( data );
+}
+
+void runGridExtendKernel(int nBlocks, int nThreads, KernelData data) {
+	gridExtendKernel<<<nBlocks,nThreads>>>( data );
+}

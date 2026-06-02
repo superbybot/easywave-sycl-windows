@@ -125,7 +125,12 @@ int main( int argc, char **argv )
     	ewSavePOIs();
     }
 
-    Node.run();
+    try {
+        Node.run();
+    } catch( const std::exception& e ) {
+        fprintf(stderr, "FATAL ERROR: %s\n", e.what());
+        return -1;
+    }
 
     inter = std::chrono::steady_clock::now();
     elapsed = diff(start, inter) * 1000;

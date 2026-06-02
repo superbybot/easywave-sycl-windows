@@ -31,12 +31,17 @@
  */
 
 #include <string>
+#include <iostream>
+#include <stdexcept>
+#include <cmath>
+#include <algorithm>
 
 #include "cuda.h"
+#include "cuda_runtime.h"
 #include "ewGpuNode.hpp"
 #include "ewKernels.cuda.cuh"
 
-#define CUDA_CALL(x) if( (x) != cudaSuccess ) { throw std::runtime_error("Error in file " __FILE__ ":" + std::to_string(__LINE__) + ": " + cudaGetErrorString( cudaGetLastError() ) ); }
+#define CUDA_CALL(x) do { cudaError_t err = (x); if( err != cudaSuccess ) { throw std::runtime_error("Error in file " __FILE__ ":" + std::to_string(__LINE__) + ": " + cudaGetErrorString( err ) ); } } while(0)
 
 CGpuNode::CGpuNode() {
 
@@ -93,11 +98,11 @@ int CGpuNode::mallocMem() {
 	/* TODO: cR3, cR5 for coriolis */
 
 	/* 1-dim */
-	CUDA_CALL( cudaMalloc( &(data.cR6), dp.nJ * sizeof(float) ) );
-	CUDA_CALL( cudaMalloc( &(data.cB1), dp.nI * sizeof(float) ) );
-	CUDA_CALL( cudaMalloc( &(data.cB2), dp.nJ * sizeof(float) ) );
-	CUDA_CALL( cudaMalloc( &(data.cB3), dp.nI * sizeof(float) ) );
-	CUDA_CALL( cudaMalloc( &(data.cB4), dp.nJ * sizeof(float) ) );
+	CUDA_CALL( cudaMalloc( &(data.cR6), (dp.nJ + 1) * sizeof(float) ) );
+	CUDA_CALL( cudaMalloc( &(data.cB1), (dp.nI + 1) * sizeof(float) ) );
+	CUDA_CALL( cudaMalloc( &(data.cB2), (dp.nJ + 1) * sizeof(float) ) );
+	CUDA_CALL( cudaMalloc( &(data.cB3), (dp.nI + 1) * sizeof(float) ) );
+	CUDA_CALL( cudaMalloc( &(data.cB4), (dp.nJ + 1) * sizeof(float) ) );
 
 	CUDA_CALL( cudaMalloc( &(data.g_MinMax), sizeof(int4) ) );
 
@@ -134,11 +139,11 @@ int CGpuNode::copyToGPU() {
 
 	/* FIXME: move global variables into data structure */
 	/* 1-dim */
-	CUDA_CALL( cudaMemcpy( data.cR6, R6, dp.nJ * sizeof(float), cudaMemcpyHostToDevice ) );
-	CUDA_CALL( cudaMemcpy( data.cB1, C1, dp.nI * sizeof(float), cudaMemcpyHostToDevice ) );
-	CUDA_CALL( cudaMemcpy( data.cB2, C2, dp.nJ * sizeof(float), cudaMemcpyHostToDevice ) );
-	CUDA_CALL( cudaMemcpy( data.cB3, C3, dp.nI * sizeof(float), cudaMemcpyHostToDevice ) );
-	CUDA_CALL( cudaMemcpy( data.cB4, C4, dp.nJ * sizeof(float), cudaMemcpyHostToDevice ) );
+	CUDA_CALL( cudaMemcpy( data.cR6, R6, (dp.nJ + 1) * sizeof(float), cudaMemcpyHostToDevice ) );
+	CUDA_CALL( cudaMemcpy( data.cB1, C1, (dp.nI + 1) * sizeof(float), cudaMemcpyHostToDevice ) );
+	CUDA_CALL( cudaMemcpy( data.cB2, C2, (dp.nJ + 1) * sizeof(float), cudaMemcpyHostToDevice ) );
+	CUDA_CALL( cudaMemcpy( data.cB3, C3, (dp.nI + 1) * sizeof(float), cudaMemcpyHostToDevice ) );
+	CUDA_CALL( cudaMemcpy( data.cB4, C4, (dp.nJ + 1) * sizeof(float), cudaMemcpyHostToDevice ) );
 
 	return 0;
 }
@@ -182,7 +187,7 @@ int CGpuNode::copyPOIs() {
 
 		int id = data.idx( i, j );
 
-		CUDA_CALL( cudaMemcpy( h + idxPOI[n], data.h + dp.lpad + id, sizeof(float), cudaMemcpyDeviceToHost ) );
+		CUDA_CALL( cudaMemcpy( h + idxPOI[n], data.h + id, sizeof(float), cudaMemcpyDeviceToHost ) );
 	}
 
 	return 0;
@@ -238,38 +243,43 @@ int CGpuNode::run() {
 
 	int NJ = dp.jMax - dp.jMin + 1;
 	int NI = dp.iMax - dp.iMin + 1;
-	int xBlocks = ceil( (float)NJ / (float)xThreads );
-	int yBlocks = ceil( (float)NI / (float)yThreads );
+	int xBlocks = (int)ceil( (float)NJ / (float)xThreads );
+	int yBlocks = (int)ceil( (float)NI / (float)yThreads );
 
 	dim3 threads( xThreads, yThreads );
 	dim3 blocks( xBlocks, yBlocks );
 
-	int nBlocks = ceil( (float)std::max(dp.nI,dp.nJ) / (float)nThreads );
+	int nBlocks = (int)ceil( (float)std::max(dp.nI,dp.nJ) / (float)nThreads );
 
 	dp.mTime = Par.time;
 
 	CUDA_CALL( cudaEventRecord( evtStart[KERNEL_WAVE_UPDATE], 0 ) );
-	waveUpdateKernel<<<blocks,threads>>>( data );
+	runWaveUpdateKernel(blocks, threads, data);
+	CUDA_CALL( cudaGetLastError() );
 	CUDA_CALL( cudaEventRecord( evtEnd[KERNEL_WAVE_UPDATE], 0 ) );
 
 	CUDA_CALL( cudaEventRecord( evtStart[KERNEL_WAVE_BOUND], 0 ) );
-	waveBoundaryKernel<<<nBlocks,nThreads>>>( data );
+	runWaveBoundaryKernel(nBlocks, nThreads, data);
+	CUDA_CALL( cudaGetLastError() );
 	CUDA_CALL( cudaEventRecord( evtEnd[KERNEL_WAVE_BOUND], 0 ) );
 
 	CUDA_CALL( cudaEventRecord( evtStart[KERNEL_FLUX_UPDATE], 0 ) );
-	fluxUpdateKernel<<<blocks,threads>>>( data );
+	runFluxUpdateKernel(blocks, threads, data);
+	CUDA_CALL( cudaGetLastError() );
 	CUDA_CALL( cudaEventRecord( evtEnd[KERNEL_FLUX_UPDATE], 0 ) );
 
 	CUDA_CALL( cudaEventRecord( evtStart[KERNEL_FLUX_BOUND], 0 ) );
-	fluxBoundaryKernel<<<nBlocks,nThreads>>>( data );
+	runFluxBoundaryKernel(nBlocks, nThreads, data);
+	CUDA_CALL( cudaGetLastError() );
 	CUDA_CALL( cudaEventRecord( evtEnd[KERNEL_FLUX_BOUND], 0 ) );
 
 	CUDA_CALL( cudaEventRecord( evtStart[KERNEL_MEMSET], 0 ) );
-	CUDA_CALL( cudaMemset( data.g_MinMax, 0, sizeof(data.g_MinMax) ) );
+	CUDA_CALL( cudaMemset( data.g_MinMax, 0, sizeof(int4) ) );
 	CUDA_CALL( cudaEventRecord( evtEnd[KERNEL_MEMSET], 0 ) );
 
 	CUDA_CALL( cudaEventRecord( evtStart[KERNEL_EXTEND], 0 ) );
-	gridExtendKernel<<<nBlocks,nThreads>>>( data );
+	runGridExtendKernel(nBlocks, nThreads, data);
+	CUDA_CALL( cudaGetLastError() );
 	CUDA_CALL( cudaEventRecord( evtEnd[KERNEL_EXTEND], 0 ) );
 
 	int4 MinMax;

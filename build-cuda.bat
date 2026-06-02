@@ -3,64 +3,91 @@ REM Build script for EasyWave CUDA version
 
 REM Set up Visual Studio environment
 echo Setting up Visual Studio environment...
-call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x64
+set "VS_PATH="
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" (
+    set "VS_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat"
+) else if exist "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvarsall.bat" (
+    set "VS_PATH=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvarsall.bat"
+)
+
+if "%VS_PATH%"=="" (
+    echo ERROR: Could not find vcvarsall.bat!
+    exit /b 1
+)
+
+call "%VS_PATH%" x64
 echo.
 
-set NVCC="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.1\bin\nvcc.exe"
-set CXXFLAGS=-O3 -std=c++17 --extra-device-vectorization --use_fast_math -x cu
+set CUDA_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9
+if not exist "%CUDA_DIR%" (
+    echo CUDA v12.9 not found at "%CUDA_DIR%", falling back to v13.1...
+    set CUDA_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.1
+)
+
+echo Using CUDA Toolkit at: "%CUDA_DIR%"
+set NVCC="%CUDA_DIR%\bin\nvcc.exe"
+set NVCC_FLAGS=-allow-unsupported-compiler -gencode arch=compute_61,code=sm_61 -gencode arch=compute_61,code=compute_61 -O3 -std=c++17 --extra-device-vectorization --use_fast_math -c
+set CXX_FLAGS=/nologo /O2 /EHsc /std:c++17 /D_CRT_SECURE_NO_WARNINGS /DEW_FORCE_CUDA /I"%CUDA_DIR%\include" /c
+
+echo Cleaning old build artifacts...
+del /Q *.o 2>nul
+del /Q *.obj 2>nul
+del /Q easywave-cuda.exe 2>nul
+echo.
 
 echo Building EasyWave CUDA version...
 echo.
 
-REM Compile all source files
-echo Compiling EasyWave.cpp...
-%NVCC% %CXXFLAGS% -c EasyWave.cpp -o EasyWave.o
-
+REM Compile CUDA source files
 echo Compiling ewKernels.cuda.cu...
-%NVCC% %CXXFLAGS% -c ewKernels.cuda.cu -o ewKernels.cuda.o
+%NVCC% %NVCC_FLAGS% ewKernels.cuda.cu -o ewKernels.cuda.obj
 
-echo Compiling ewGpuNode.cuda.cu...
-%NVCC% %CXXFLAGS% -c ewGpuNode.cuda.cu -o ewGpuNode.cuda.o
+REM Compile C++ source files with host compiler
+echo Compiling EasyWave.cpp...
+cl %CXX_FLAGS% EasyWave.cpp /FoEasyWave.obj
+
+echo Compiling ewGpuNode.cpp...
+cl %CXX_FLAGS% ewGpuNode.cpp /FoewGpuNode.obj
 
 echo Compiling cOgrd.cpp...
-%NVCC% %CXXFLAGS% -c cOgrd.cpp -o cOgrd.o
+cl %CXX_FLAGS% cOgrd.cpp /FocOgrd.obj
 
 echo Compiling cOkadaEarthquake.cpp...
-%NVCC% %CXXFLAGS% -c cOkadaEarthquake.cpp -o cOkadaEarthquake.o
+cl %CXX_FLAGS% cOkadaEarthquake.cpp /FocOkadaEarthquake.obj
 
 echo Compiling cOkadaFault.cpp...
-%NVCC% %CXXFLAGS% -c cOkadaFault.cpp -o cOkadaFault.o
+cl %CXX_FLAGS% cOkadaFault.cpp /FocOkadaFault.obj
 
 echo Compiling cSphere.cpp...
-%NVCC% %CXXFLAGS% -c cSphere.cpp -o cSphere.o
+cl %CXX_FLAGS% cSphere.cpp /FocSphere.obj
 
 echo Compiling ewGrid.cpp...
-%NVCC% %CXXFLAGS% -c ewGrid.cpp -o ewGrid.o
+cl %CXX_FLAGS% ewGrid.cpp /FoewGrid.obj
 
 echo Compiling ewOut2D.cpp...
-%NVCC% %CXXFLAGS% -c ewOut2D.cpp -o ewOut2D.o
+cl %CXX_FLAGS% ewOut2D.cpp /FoewOut2D.obj
 
 echo Compiling ewParam.cpp...
-%NVCC% %CXXFLAGS% -c ewParam.cpp -o ewParam.o
+cl %CXX_FLAGS% ewParam.cpp /FoewParam.obj
 
 echo Compiling ewPOIs.cpp...
-%NVCC% %CXXFLAGS% -c ewPOIs.cpp -o ewPOIs.o
+cl %CXX_FLAGS% ewPOIs.cpp /FoewPOIs.obj
 
 echo Compiling ewSource.cpp...
-%NVCC% %CXXFLAGS% -c ewSource.cpp -o ewSource.o
+cl %CXX_FLAGS% ewSource.cpp /FoewSource.obj
 
 echo Compiling ewStep.cpp...
-%NVCC% %CXXFLAGS% -c ewStep.cpp -o ewStep.o
+cl %CXX_FLAGS% ewStep.cpp /FoewStep.obj
 
 echo Compiling okada.cpp...
-%NVCC% %CXXFLAGS% -c okada.cpp -o okada.o
+cl %CXX_FLAGS% okada.cpp /Fookada.obj
 
 echo Compiling utilits.cpp...
-%NVCC% %CXXFLAGS% -c utilits.cpp -o utilits.o
+cl %CXX_FLAGS% utilits.cpp /Foutilits.obj
 
 echo.
 echo Linking...
-%NVCC% EasyWave.o ewKernels.cuda.o ewGpuNode.cuda.o cOgrd.o cOkadaEarthquake.o cOkadaFault.o cSphere.o ewGrid.o ewOut2D.o ewParam.o ewPOIs.o ewSource.o ewStep.o okada.o utilits.o -o easywave-cuda.exe
+%NVCC% -allow-unsupported-compiler EasyWave.obj ewKernels.cuda.obj ewGpuNode.obj cOgrd.obj cOkadaEarthquake.obj cOkadaFault.obj cSphere.obj ewGrid.obj ewOut2D.obj ewParam.obj ewPOIs.obj ewSource.obj ewStep.obj okada.obj utilits.obj -o easywave-cuda.exe
 
 if exist easywave-cuda.exe (
     echo.
