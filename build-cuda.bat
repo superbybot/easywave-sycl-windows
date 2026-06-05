@@ -18,6 +18,14 @@ if "%VS_PATH%"=="" (
 call "%VS_PATH%" x64
 echo.
 
+REM TODO / FUTURE COMPATIBILITY NOTE:
+REM - The default compilation targets compute_61/sm_61 (GTX 1070/1080/1060/1050 etc. Pascal GPUs).
+REM - Older GPUs with lower compute capabilities (e.g. Maxwell GTX 970/980 with sm_52/sm_50) are not
+REM   supported by default. To support Maxwell, add '-gencode arch=compute_52,code=sm_52' to NVCC_FLAGS.
+REM - CUDA v12.x still supports Maxwell, Pascal, and Volta, but deprecates them (raising compiler warnings).
+REM - CUDA v13.x drops Maxwell, Pascal, and Volta entirely. If this script falls back to CUDA 13.x,
+REM   compilation targeting compute_61/sm_61 (or lower) will fail/be unsupported by NVCC.
+
 set CUDA_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9
 if not exist "%CUDA_DIR%" (
     echo CUDA v12.9 not found at "%CUDA_DIR%", falling back to v13.1...
@@ -26,7 +34,7 @@ if not exist "%CUDA_DIR%" (
 
 echo Using CUDA Toolkit at: "%CUDA_DIR%"
 set NVCC="%CUDA_DIR%\bin\nvcc.exe"
-set NVCC_FLAGS=-allow-unsupported-compiler -gencode arch=compute_61,code=sm_61 -gencode arch=compute_61,code=compute_61 -O3 -std=c++17 --extra-device-vectorization --use_fast_math -c
+set NVCC_FLAGS=-allow-unsupported-compiler -gencode arch=compute_52,code=sm_52 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_61,code=compute_61 -O3 -std=c++17 --extra-device-vectorization --use_fast_math -c
 set CXX_FLAGS=/nologo /O2 /EHsc /std:c++17 /D_CRT_SECURE_NO_WARNINGS /DEW_FORCE_CUDA /I"%CUDA_DIR%\include" /c
 
 echo Cleaning old build artifacts...
@@ -90,10 +98,12 @@ echo Linking...
 %NVCC% -allow-unsupported-compiler EasyWave.obj ewKernels.cuda.obj ewGpuNode.obj cOgrd.obj cOkadaEarthquake.obj cOkadaFault.obj cSphere.obj ewGrid.obj ewOut2D.obj ewParam.obj ewPOIs.obj ewSource.obj ewStep.obj okada.obj utilits.obj -o easywave-cuda.exe
 
 if exist easywave-cuda.exe (
+    if not exist build mkdir build
+    copy /Y easywave-cuda.exe build\easywave-cuda.exe >nul
     echo.
     echo ========================================
     echo Build successful!
-    echo Created: easywave-cuda.exe
+    echo Created: easywave-cuda.exe - also copied to build\easywave-cuda.exe
     echo ========================================
 ) else (
     echo.

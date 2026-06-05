@@ -56,3 +56,12 @@ ImageMagick's `convert` or similar commands may be used to convert the PPM file 
 ```
 sfg2ppm.py --palette sshmax.rel.cpt eWave.2D.sshmax | convert -flip - sshmax.png
 ```
+
+## CUDA / GPU Compatibility & Future TODOs
+
+- **CUDA Build GPU Compatibility**: By default, [build-cuda.bat](file:///c:/Users/dell/Desktop/easywave-sycl-windows/build-cuda.bat) compiles the CUDA version to support:
+  - **Maxwell Architecture (`sm_52` / GTX 900 series)**: e.g., GTX 980, GTX 970, GTX 960, etc.
+  - **Pascal Architecture (`sm_61` / GTX 10-series)**: e.g., GTX 1080, GTX 1070, GTX 1060, GTX 1050, etc.
+  - **Newer NVIDIA GPUs (Turing, Ampere, Ada Lovelace, Blackwell, etc.)**: e.g., RTX 20-series, 30-series, 40-series, and **50-series (RTX 5060/5070/5080/5090)**. These are supported via PTX JIT (Just-In-Time) compilation, where the NVIDIA driver automatically compiles the embedded Pascal `compute_61` PTX code into native machine code at runtime.
+- **CUDA 13.x Warning**: CUDA 13.x completely removes support for Maxwell, Pascal (sm_61), and Volta architectures. If compiling with CUDA 13.x or newer, compilation targeting these older GPUs will fail.
+- **TODO**: In the future, migrate the codebase to support newer architectures (Turing `sm_75` and newer) natively as CUDA 13 becomes standard, or configure the build system to gracefully fallback to supported architectures based on the installed CUDA Toolkit version.
